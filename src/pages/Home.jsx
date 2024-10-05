@@ -23,6 +23,7 @@ const Home = () => {
   const [members, setMembers] = useState([]);
   const [dates, setDates] = useState(null);
   const [shiftId, setShiftId] = useState(null);
+  const [history, setHistory] = useState([]);
   const printRef = useRef();
 
   const handleSave = async () => {
@@ -93,10 +94,70 @@ const Home = () => {
     content: () => printRef.current,
   });
 
+  const onChange = (data) => {
+    setDates([...data]);
+    setHistory((prev = []) => {
+      if (prev.length > 0) {
+        const last = prev[prev.length - 1];
+        if (JSON.stringify(last) === JSON.stringify(data)) {
+          return prev;
+        }
+        return [...prev, data];
+      }
+    });
+  };
+
+  const undo = () => {
+    if (history.length > 1) {
+      const newHistory = [...history];
+      newHistory.pop();
+      setHistory(newHistory);
+      setDates(newHistory[newHistory.length - 1]);
+    }
+  };
+  
+
   useEffect(() => {
     setShiftId(null);
     fetchShift();
   }, [selectedMonth, selectedYear]);
+
+  const generateDates = (month, year) => {
+    const dates = [];
+    const date = new Date(year, month - 1, 1); // JavaScript months are 0-based
+
+    while (date.getMonth() === month - 1) {
+      dates.push({
+        day: new Date(date),
+        holiday: date.getDay() === 0 || date.getDay() === 6 ? true : false,
+        morning: {
+          compre: [],
+          ptu: [],
+          sp: [],
+          rotate: [],
+          service: [],
+          academic: [],
+          standBy: [],
+          leave: [],
+          off: [],
+        },
+        afternoon: {
+          compre: [],
+          ptu: [],
+          sp: [],
+          rotate: [],
+          service: [],
+          academic: [],
+          standBy: [],
+          leave: [],
+          off: [],
+        },
+      });
+      date.setDate(date.getDate() + 1);
+    }
+
+    return dates;
+  };
 
   return (
     <div>
@@ -127,16 +188,42 @@ const Home = () => {
           >
             แก้ไขวันหยุด
           </button>
-          <button className={`btn ${editLeave ? "btn-error" : "btn-accent"}`} onClick={() => setEditLeave(!editLeave)} >  
+          <button
+            className={`btn ${editLeave ? "btn-error" : "btn-accent"}`}
+            onClick={() => setEditLeave(!editLeave)}
+          >
             ขอไม่เวร
           </button>
-          <button className="btn btn-primary" onClick={handleSave}>
-            save
-          </button>
-          <button className="btn btn-info" onClick={handlePrint}>
-            Print
-          </button>
         </div>
+      </div>
+      <div className="w-full px-20 flex justify-end items-center gap-2">
+        <button className="btn" onClick={undo}>
+          <svg
+            width="24"
+            height="24"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M12.2071 2.29289C12.5976 2.68342 12.5976 3.31658 12.2071 3.70711L10.9142 5H12.5C17.1523 5 21 8.84772 21 13.5C21 18.1523 17.1523 22 12.5 22C7.84772 22 4 18.1523 4 13.5C4 12.9477 4.44772 12.5 5 12.5C5.55228 12.5 6 12.9477 6 13.5C6 17.0477 8.95228 20 12.5 20C16.0477 20 19 17.0477 19 13.5C19 9.95228 16.0477 7 12.5 7H10.9142L12.2071 8.29289C12.5976 8.68342 12.5976 9.31658 12.2071 9.70711C11.8166 10.0976 11.1834 10.0976 10.7929 9.70711L7.79289 6.70711C7.40237 6.31658 7.40237 5.68342 7.79289 5.29289L10.7929 2.29289C11.1834 1.90237 11.8166 1.90237 12.2071 2.29289Z"
+            />
+          </svg>
+        </button>
+        <button
+          className="btn "
+          onClick={() => setDates(generateDates(selectedMonth, selectedYear))}
+        >
+          Clear
+        </button>
+        <button className="btn btn-primary" onClick={handleSave}>
+          save
+        </button>
+        <button className="btn btn-info" onClick={handlePrint}>
+          Print
+        </button>
       </div>
       <DateTable
         month={selectedMonth}
@@ -144,10 +231,11 @@ const Home = () => {
         editHoliday={editHoliday}
         selectedMember={selectedMember}
         members={members}
-        onChange={setDates}
+        onChange={onChange}
         editLeave={editLeave}
         value={dates}
         ref={printRef}
+        generateDates={generateDates}
       />
     </div>
   );

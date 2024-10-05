@@ -1,42 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../printStyles.css";
 // Function to generate dates for a given month and year
-const generateDates = (month, year) => {
-  const dates = [];
-  const date = new Date(year, month - 1, 1); // JavaScript months are 0-based
 
-  while (date.getMonth() === month - 1) {
-    dates.push({
-      day: new Date(date),
-      holiday: date.getDay() === 0 || date.getDay() === 6 ? true : false,
-      morning: {
-        compre: [],
-        ptu: [],
-        sp: [],
-        rotate: [],
-        service: [],
-        academic: [],
-        standBy: [],
-        leave: [],
-        off: [],
-      },
-      afternoon: {
-        compre: [],
-        ptu: [],
-        sp: [],
-        rotate: [],
-        service: [],
-        academic: [],
-        standBy: [],
-        leave: [],
-        off: [],
-      },
-    });
-    date.setDate(date.getDate() + 1);
-  }
-
-  return dates;
-};
 
 // Array to map weekdays to Thai names
 const weekdaysInThai = [
@@ -70,6 +35,7 @@ const DateTable = React.forwardRef(
       members,
       onChange,
       value,
+      generateDates
     },
     ref
   ) => {
@@ -90,6 +56,13 @@ const DateTable = React.forwardRef(
       );
       if (!selectedMember) return;
       let currentDates = dates;
+      if(act === "off"){
+        if(!currentDates[index][shift].leave.includes(selectedMember.value)){
+          currentDates[index][shift].leave.push(selectedMember.value);
+        }else{
+          currentDates[index][shift].leave = currentDates[index][shift].leave.filter((leave) => leave !== selectedMember.value);
+        }
+      }
       if (currentDates[index][shift].leave) {
         if (currentDates[index][shift].leave.includes(selectedMember.value)) {
           alert(`${selectedMember.label} ขอไม่เวรวันนี้`);
@@ -106,15 +79,9 @@ const DateTable = React.forwardRef(
       columns.forEach((column) => { 
         currentDates[index][shift][column.value] = currentDates[index][shift][column.value].filter((member) => member !== selectedMember.value);
       });
-      if(act === "off"){
-        if(!currentDates[index][shift].leave.includes(selectedMember.value)){
-          currentDates[index][shift].leave.push(selectedMember.value);
-        }
-      }
       currentDates[index][shift][act].push(selectedMember.value);
       onChange([...currentDates]);
       setDates([...currentDates]);
-      console.log(members);
     };
 
     const toggleLeave = (day, shift) => {
@@ -179,7 +146,7 @@ const DateTable = React.forwardRef(
               {columns.map((column, index) => (
                 <th
                   key={column.value}
-                  className={`border px-4 py-2 border-black border-l-0 
+                  className={`border px-4 py-2 w-48 border-black border-l-0 
                   }`}
                 >
                   {column.name}
